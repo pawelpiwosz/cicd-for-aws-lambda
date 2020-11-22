@@ -1,0 +1,34 @@
+# Demo repository for https://pyconf.hydpy.org/2020/
+
+## Introduction
+
+This repository contains whole scenario to follow.  
+Some of actions need to be taken separately, some of them might be not described here in full detail.  
+In this case, please follow official AWS documentation.
+
+## Github? CodeCommit?
+
+To run this tutorial, the repository must be located in CodeCommit. _This_ repository is in Github in order to make it easier to dowwnload.  
+Of course, the code can be run from Github, CodePipeline has good integration. 
+
+## Scenario
+
+Workshop scenario is simple. Small lambda fucntion will be deployed to AWS using AWS CodePipeline using canary deployment.
+
+## Resources
+
+Resources used during this workshop
+
+* Python (to build Lambda function)
+* AWS IAM
+* AWS LAmbda
+* AWS API Gateway
+* AWS CodeCommit
+* AWS CodeBuild
+* AWS CodeDeploy
+
+## Documentation and all steps
+
+In order to run the lab, please follow the tutorial
+
+1. [Initialization](docs/001_initialization.md)
