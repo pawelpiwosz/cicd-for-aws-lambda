@@ -1,0 +1,166 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Setup CodeBuild and CodeDeploy pipeline
+
+Resources:
+
+  artifactsBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Delete
+
+  lambdaBuildRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - codebuild.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: "/"
+      Policies:
+      - PolicyName: lambdaBuildPolicy
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action: "*"
+            Resource: "*"
+          Version: '2012-10-17'
+
+  lambdaPipelineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - codepipeline.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: "/"
+      Policies:
+      - PolicyName: lambdaPipelinePolicy
+        PolicyDocument:
+          Statement:
+          - Action:
+            - codebuild:*
+            - codecommit:*
+            Resource: "*"
+            Effect: Allow
+          - Action:
+            - s3:GetObject
+            - s3:GetObjectVersion
+            - s3:GetBucketVersioning
+            Resource: "*"
+            Effect: Allow
+          - Action:
+            - s3:PutObject
+            Resource:
+            - arn:aws:s3:::codepipeline*
+            Effect: Allow
+          - Action:
+            - s3:*
+            - cloudformation:*
+            - iam:PassRole
+            Resource: "*"
+            Effect: Allow
+          Version: '2012-10-17'
+
+  lambdaPipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties: 
+      RoleArn: !GetAtt lambdaPipelineRole.Arn
+      Stages:
+        - Name: Source
+          Actions:
+          - InputArtifacts: []
+            Name: GetSource
+            ActionTypeId:
+              Category: Source
+              Owner: AWS
+              Version: 1
+              Provider: CodeCommit
+            OutputArtifacts:
+            - Name: lambdaSourceOutput
+            Configuration:
+              RepositoryName: pyconf_hydpy
+              BranchName: master
+              PollForSourceChanges: false
+            RunOrder: 1
+
+        - Name: Tests
+          Actions:
+          - Name: LambdaTests
+            ActionTypeId:
+              Category: Test
+              Owner: AWS
+              Version: 1
+              Provider: CodeBuild
+            InputArtifacts:
+            - Name: lambdaSourceOutput
+            OutputArtifacts:
+            - Name: lambdaTestedOutput
+            RunOrder: 1
+            Configuration:
+              ProjectName: !Ref lambdaTest
+
+      #   - Name: Deploy
+      #     Actions:
+      #     - Name: Artifact
+      #       ActionTypeId:
+      #         Category: Build
+      #         Owner: AWS
+      #         Version: '1'
+      #         Provider: CodeBuild
+      #       InputArtifacts:
+      #       - Name: lambdaTestedOutput
+      #       OutputArtifacts:
+      #       - Name: lambdaDeployOutput
+      #       Configuration:
+      #         ProjectName: !Ref lambdaDeploy
+      #       RunOrder: 1
+      ArtifactStore:
+        Type: S3
+        Location: !Ref artifactsBucket
+
+  lambdaTest:
+    Type: AWS::CodeBuild::Project
+    DependsOn: lambdaBuildRole
+    Properties:
+      Name: lambdaPipeline_Tests
+      Description: Tests
+      ServiceRole: !GetAtt lambdaBuildRole.Arn
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/amazonlinux2-x86_64-standard:3.0
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: !Sub |
+          version: 0.2
+          env:
+            shell: bash
+          phases:
+            install:
+              runtime-versions:
+                python: 3.8
+              commands:
+                - echo Starting Install stage on $(date)...
+            build:
+              commands:
+                - echo Execute build
+            post_build:
+              commands:
+                - echo Execute post-build
+          # reports:
+          #   lambdaTest:
+          #     files:
+          #       - '**/*'
+          #     base-directory: 'reports'
+          #     discard-paths: false
+          #     file-format: JUNITXML
+      TimeoutInMinutes: 10
