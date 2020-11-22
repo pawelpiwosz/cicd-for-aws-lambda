@@ -21,7 +21,8 @@ Resources used during this workshop
 
 * Python (to build Lambda function)
 * AWS IAM
-* AWS LAmbda
+* AWS CLoudWatch Events
+* AWS Lambda
 * AWS API Gateway
 * AWS CodeCommit
 * AWS CodeBuild
@@ -32,5 +33,5 @@ Resources used during this workshop
 In order to run the lab, please follow the tutorial
 
 1. [Initialization](docs/001_initialization.md)
-2. [Repository initialization](docs/002_repository)
-3. [Setup CodePipeline](docs/003-IaC.md)
+2. [Repository initialization](docs/002_repository.md)
+3. [Setup CodePipeline](docs/003_IaC.md)
