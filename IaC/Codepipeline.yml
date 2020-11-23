@@ -176,12 +176,12 @@ Resources:
                 python: 3.8
               commands:
                 - echo Starting Install stage on $(date)...
-                - pip install pytest coverage
+                - pip install pytest pytest-cov
             build:
               commands:
                 - echo Execute tests
                 - ls -al
-                - coverage run -m pytest tests/tests_lambda.py -vv --junit-xml=reports/unit.xml
+                -  pytest tests/tests_lambda.py -vv --junit-xml=reports/unit.xml --cov=. --cov-report=xml
             post_build:
               commands:
                 - echo Execute post-build

@@ -3,4 +3,4 @@ test/
 **/*.pyc
 **/.pytest_cache
 **/.coverage
-
+**/htmlcov
