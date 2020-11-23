@@ -7,6 +7,32 @@ Resources:
     Type: AWS::S3::Bucket
     DeletionPolicy: Delete
 
+  eventRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+              - events.amazonaws.com
+            Action:
+            - sts:AssumeRole
+      Path: '/'
+      Policies:
+        - PolicyName: eventpolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: 'codepipeline:StartPipelineExecution'
+                Resource: !Join
+                  - ':'
+                  - - 'arn:aws:codepipeline'
+                    - Fn::Sub: ${AWS::Region}
+                    - Fn::Sub: ${AWS::AccountId}
+                    - Ref: lambdaPipeline
+
   lambdaBuildRole:
     Type: AWS::IAM::Role
     Properties:
@@ -18,14 +44,14 @@ Resources:
             - codebuild.amazonaws.com
           Action:
           - sts:AssumeRole
-      Path: "/"
+      Path: '/'
       Policies:
       - PolicyName: lambdaBuildPolicy
         PolicyDocument:
           Statement:
           - Effect: Allow
-            Action: "*"
-            Resource: "*"
+            Action: '*'
+            Resource: '*'
           Version: '2012-10-17'
 
   lambdaPipelineRole:
@@ -150,17 +176,57 @@ Resources:
                 python: 3.8
               commands:
                 - echo Starting Install stage on $(date)...
+                - pip install pytest coverage
             build:
               commands:
-                - echo Execute build
+                - echo Execute tests
+                - ls -al
+                - coverage run -m pytest tests/tests_lambda.py -vv --junit-xml=reports/unit.xml
             post_build:
               commands:
                 - echo Execute post-build
-          # reports:
-          #   lambdaTest:
-          #     files:
-          #       - '**/*'
-          #     base-directory: 'reports'
-          #     discard-paths: false
-          #     file-format: JUNITXML
+          reports:
+            lambdaTest:
+              files:
+                - '**/*'
+              base-directory: 'reports'
+              discard-paths: false
+              file-format: JUNITXML
       TimeoutInMinutes: 10
+
+  masterPushRepoEvent:
+    Type: AWS::Events::Rule
+    DependsOn: eventRole
+    Properties:
+      Description: Execute when push to master branch
+      # Name: lambdaRepoMasterPushEvent
+      EventPattern:
+        source:
+          - aws.codecommit
+        detail-type:
+          - CodeCommit Repository State Change
+        resources: 
+          - 
+            !Join
+            - ':'
+            - - 'arn:aws:codecommit'
+              - Fn::Sub: ${AWS::Region}
+              - Fn::Sub: ${AWS::AccountId}
+              - 'pyconf_hydpy'
+        detail:
+          referenceType: 
+            - branch
+          referenceName:
+            - master
+      State: ENABLED
+      Targets: 
+        - 
+          Arn:
+            !Join
+            - ':'
+            - - 'arn:aws:codepipeline'
+              - Fn::Sub: ${AWS::Region}
+              - Fn::Sub: ${AWS::AccountId}
+              - Ref: lambdaPipeline
+          Id: masterPushRepoEvent
+          RoleArn: !GetAtt eventRole.Arn
