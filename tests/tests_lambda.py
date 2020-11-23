@@ -23,7 +23,7 @@ def test_sub1():
     assert subnumbers(10, 4) == 6
 
 def test_div1():
-    assert divisionnumbers(10, 4) == 2
+    assert divisionnumbers(10, 4) == 2.5
 
 def test_sum2():
     assert sumnumbers(56, 34) == 90
@@ -35,7 +35,7 @@ def test_sub2():
     assert subnumbers(56, 34) == 22
 
 def test_div2():
-    assert divisionnumbers(56, 34) == 1
+    assert divisionnumbers(56, 34) == 1.6470588235294117
 
 def test_sum3():
     assert sumnumbers(564, 344) == 908
@@ -47,7 +47,7 @@ def test_sub3():
     assert subnumbers(564, 344) == 220
 
 def test_div3():
-    assert divisionnumbers(564, 344) == 1
+    assert divisionnumbers(564, 344) == 1.6395348837209303
 
 def test_sum4():
     assert sumnumbers(5646, 3446) == 9092
@@ -59,4 +59,4 @@ def test_sub4():
     assert subnumbers(5646, 3446) == 2200
 
 def test_div4():
-    assert divisionnumbers(5646, 3446) == 1
+    assert divisionnumbers(5646, 3446) == 1.6384213580963436
