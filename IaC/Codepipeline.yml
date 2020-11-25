@@ -7,6 +7,10 @@ Resources:
     Type: AWS::S3::Bucket
     DeletionPolicy: Delete
 
+  lambdaArtifactsBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Delete
+
   eventRole:
     Type: AWS::IAM::Role
     Properties:
@@ -47,6 +51,27 @@ Resources:
       Path: '/'
       Policies:
       - PolicyName: lambdaBuildPolicy
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action: '*'
+            Resource: '*'
+          Version: '2012-10-17'
+
+  lambdaDeployRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - codedeploy.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: '/'
+      Policies:
+      - PolicyName: lambdaDeployPolicy
         PolicyDocument:
           Statement:
           - Effect: Allow
@@ -131,22 +156,38 @@ Resources:
             RunOrder: 1
             Configuration:
               ProjectName: !Ref lambdaTest
+        
+        - Name: Build
+          Actions:
+          - Name: LambdaBuild
+            ActionTypeId:
+              Category: Build
+              Owner: AWS
+              Version: 1
+              Provider: CodeBuild
+            InputArtifacts:
+            - Name: lambdaSourceOutput
+            OutputArtifacts:
+            - Name: lambdaBuildOutput
+            RunOrder: 1
+            Configuration:
+              ProjectName: !Ref lambdaBuild
 
-      #   - Name: Deploy
-      #     Actions:
-      #     - Name: Artifact
-      #       ActionTypeId:
-      #         Category: Build
-      #         Owner: AWS
-      #         Version: '1'
-      #         Provider: CodeBuild
-      #       InputArtifacts:
-      #       - Name: lambdaTestedOutput
-      #       OutputArtifacts:
-      #       - Name: lambdaDeployOutput
-      #       Configuration:
-      #         ProjectName: !Ref lambdaDeploy
-      #       RunOrder: 1
+        # - Name: Deploy
+        #   Actions:
+        #   - Name: LmbdaDeploy
+        #     ActionTypeId:
+        #       Category: Deploy
+        #       Owner: AWS
+        #       Version: '1'
+        #       Provider: Lambda
+        #     InputArtifacts:
+        #     - Name: lambdaTestedOutput
+        #     OutputArtifacts:
+        #     - Name: lambdaDeployOutput
+        #     Configuration:
+        #       ProjectName: !Ref lambdaDeploy
+        #     RunOrder: 1
       ArtifactStore:
         Type: S3
         Location: !Ref artifactsBucket
@@ -175,23 +216,68 @@ Resources:
               runtime-versions:
                 python: 3.8
               commands:
-                - echo Starting Install stage on $(date)...
+                - echo Starting Install stage on $(date)
                 - pip install pytest pytest-cov
             build:
               commands:
-                - echo Execute tests
-                - ls -al
-                -  pytest tests/tests_lambda.py -vv --junit-xml=reports/unit.xml --cov=. --cov-report=xml
+                - echo Execute tests  on $(date)
+                - pytest tests/tests_lambda.py -vv --junit-xml=reports/unit.xml --cov=. --cov-report=xml
+                - mkdir coverage
+                - cp coverage.xml coverage/
             post_build:
               commands:
-                - echo Execute post-build
+                - echo Execute post-build  on $(date)
           reports:
-            lambdaTest:
+            lambdaTestUnit:
               files:
                 - '**/*'
               base-directory: 'reports'
               discard-paths: false
               file-format: JUNITXML
+            lambdaTestCoverage:
+              files:
+                - '**/*'
+              base-directory: 'coverage'
+              discard-paths: false
+              file-format: COBERTURAXML
+      TimeoutInMinutes: 10
+
+  lambdaBuild:
+    Type: AWS::CodeBuild::Project
+    DependsOn: lambdaBuildRole
+    Properties:
+      Name: lambdaPipeline_Build
+      Description: Tests
+      ServiceRole: !GetAtt lambdaBuildRole.Arn
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/amazonlinux2-x86_64-standard:3.0
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: !Sub |
+          version: 0.2
+          env:
+            shell: bash
+          phases:
+            install:
+              runtime-versions:
+                python: 3.8
+              commands:
+                - echo Starting Install stage on $(date)
+            build:
+              commands:
+                - echo Execute build on $(date)
+                - !Sub aws cloudformation package --template-file template.yaml --s3-bucket ${lambdaArtifactsBucket} --output-template-file outputTemplate.yaml
+            post_build:
+              commands:
+                - echo Execute post-build on $(date)
+          artifacts:
+            type: zip
+              - template.yaml
+              - outputTemplate.yaml
       TimeoutInMinutes: 10
 
   masterPushRepoEvent:
