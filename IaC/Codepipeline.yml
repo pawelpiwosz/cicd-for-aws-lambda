@@ -285,7 +285,6 @@ Resources:
     DependsOn: eventRole
     Properties:
       Description: Execute when push to master branch
-      # Name: lambdaRepoMasterPushEvent
       EventPattern:
         source:
           - aws.codecommit
