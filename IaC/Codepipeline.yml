@@ -270,6 +270,7 @@ Resources:
             build:
               commands:
                 - echo Execute build on $(date)
+                - ls -al
                 - !Sub aws cloudformation package --template-file template.yaml --s3-bucket ${lambdaArtifactsBucket} --output-template-file outputTemplate.yaml
             post_build:
               commands:
