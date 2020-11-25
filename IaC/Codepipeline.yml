@@ -181,7 +181,7 @@ Resources:
         #       Owner: AWS
         #       Version: '1'
         #       Provider: Lambda
-        #     InputArtifacts:
+        #     InputArtifacts: 
         #     - Name: lambdaTestedOutput
         #     OutputArtifacts:
         #     - Name: lambdaDeployOutput
