@@ -271,14 +271,14 @@ Resources:
               commands:
                 - echo Execute build on $(date)
                 - ls -al
-                - !Sub aws cloudformation package --template-file template.yaml --s3-bucket ${lambdaArtifactsBucket} --output-template-file outputTemplate.yaml
+                - !Sub aws cloudformation package --template-file template.yml --s3-bucket ${lambdaArtifactsBucket} --output-template-file outputTemplate.yml
             post_build:
               commands:
                 - echo Execute post-build on $(date)
           artifacts:
             type: zip
-              - template.yaml
-              - outputTemplate.yaml
+              - template.yml
+              - outputTemplate.yml
       TimeoutInMinutes: 10
 
   masterPushRepoEvent:
