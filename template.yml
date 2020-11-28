@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-Transform: Aws::Serverless-2016-10-31
+Transform: AWS::Serverless-2016-10-31
 Description: CodePipeline for Lambda
 
 Resources:
