@@ -1,5 +1,7 @@
 """ Demo lambda """
 
+import json
+
 def sumnumbers(a, b):
     """ simple function """
     result = a + b
@@ -35,5 +37,8 @@ def handler(event, context):
         thirdoperation,
         fourthoperation
     )
-    return response
+    return {
+        'statusCode': 200,
+        'body': json.dumps(response)
+    }
 
