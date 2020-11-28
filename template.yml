@@ -7,7 +7,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Handler: simplefunction.handler
-      CodeUri: lambdafunction/
+      CodeUri: outputTemplate.yml
       Runtime: Python3.8
       AutoPublishAlias: live
       Description: pyconf hydpy demo function
