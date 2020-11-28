@@ -37,6 +37,49 @@ Resources:
                     - Fn::Sub: ${AWS::AccountId}
                     - Ref: lambdaPipeline
 
+  lambdaTrustRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal: 
+              Service:
+              - lambda.amazonaws.com
+            Action: 
+              - sts:AssumeRole
+      Path: '/'
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+      Policies:
+        - PolicyName: lambdaPolicy
+          PolicyDocument:
+            Statement:
+            - Effect: Allow
+              Action:
+              - cloudformation:CreateStack
+              - cloudformation:DeleteStack
+              - cloudformation:DescribeStacks
+              - cloudformation:UpdateStack
+              - cloudformation:CreateChangeSet
+              - cloudformation:DeleteChangeSet
+              - cloudformation:DescribeChangeSet
+              - cloudformation:ExecuteChangeSet
+              - cloudformation:SetStackPolicy
+              - cloudformation:ValidateTemplate
+              Resource: 'arn:aws:cloudformation:eu-central-1:aws:transform/Serverless-2016-10-31'
+            - Effect: Allow
+              Action:
+              - lambda:*
+              - logs:*
+              - cloudwatch:*
+              - apigateway:*
+              - s3:*
+              - events:*
+              - kms:*
+              Resource: '*'
+            Version: '2012-10-17'
+
   lambdaBuildRole:
     Type: AWS::IAM::Role
     Properties:
@@ -66,17 +109,59 @@ Resources:
         - Effect: Allow
           Principal:
             Service:
-            - codedeploy.amazonaws.com
+            - cloudformation.amazonaws.com
           Action:
           - sts:AssumeRole
       Path: '/'
+      # ManagedPolicyArns:
+        # - arn:aws:iam::aws:policy/AmazonS3FullAccess
+        # - arn:aws:iam::aws:policy/AWSCloudFormationFullAccess
       Policies:
       - PolicyName: lambdaDeployPolicy
         PolicyDocument:
           Statement:
           - Effect: Allow
-            Action: '*'
+            Action:
+            - cloudformation:CreateStack
+            - cloudformation:DeleteStack
+            - cloudformation:DescribeStacks
+            - cloudformation:UpdateStack
+            - cloudformation:CreateChangeSet
+            - cloudformation:DeleteChangeSet
+            - cloudformation:DescribeChangeSet
+            - cloudformation:ExecuteChangeSet
+            - cloudformation:SetStackPolicy
+            - cloudformation:ValidateTemplate
+            Resource: 'arn:aws:cloudformation:eu-central-1:aws:transform/Serverless-2016-10-31'
+            # Resource: '*'
+            #Resource: !Sub 'arn:aws:cloudformation:${AWS::Region}:transform/Serverless-2016-10-31'
+          - Effect: Allow
+            Action:
+            - s3:PutObject
+            - s3:GetObject
+            - s3:GetObjectVersion
+            Resource:
+            - !Sub 'arn:aws:s3:::${artifactsBucket}'
+          - Effect: Allow
+            Action:
+            - s3:*
+            Resource:
+            - !Sub 'arn:aws:s3:::${artifactsBucket}/*'
+          - Effect: Allow
+            Action: 
+            - apigateway:*
+            - codedeploy:*
+            - sns:*
+            - logs:*
+            - cloudwatch:*
+            - events:*
+            - s3:*
+            - iam:*
+            - lambda:*
             Resource: '*'
+          - Effect: Allow
+            Action: iam:PassRole
+            Resource: !GetAtt lambdaTrustRole.Arn
           Version: '2012-10-17'
 
   lambdaPipelineRole:
@@ -95,23 +180,40 @@ Resources:
       - PolicyName: lambdaPipelinePolicy
         PolicyDocument:
           Statement:
+          # - Effect: Allow
+          #   Action: 
+          #   - lambda:*
+          #   Resource: '*'
+          # - Action:
+          #   - s3:*
+          #   Resource:
+          #   - !Sub 'arn:aws:s3:::${lambdaArtifactsBucket}/*'
+          #   Effect: Allow
+          - Effect: Allow
+            Action:
+            - cloudformation:CreateStack
+            - cloudformation:DeleteStack
+            - cloudformation:DescribeStacks
+            - cloudformation:UpdateStack
+            - cloudformation:CreateChangeSet
+            - cloudformation:DeleteChangeSet
+            - cloudformation:DescribeChangeSet
+            - cloudformation:ExecuteChangeSet
+            - cloudformation:SetStackPolicy
+            - cloudformation:ValidateTemplate
+            Resource: 'arn:aws:cloudformation:eu-central-1:aws:transform/Serverless-2016-10-31'
+            # Resource: '*'
+          # - Action:
+          #   - codebuild:*
+          #   - codecommit:*
+          #   - kms:*
+          #   Resource: "*"
+          #   Effect: Allow
           - Action:
-            - codebuild:*
+            - kms:*
             - codecommit:*
-            Resource: "*"
-            Effect: Allow
-          - Action:
-            - s3:GetObject
-            - s3:GetObjectVersion
-            - s3:GetBucketVersioning
-            Resource: "*"
-            Effect: Allow
-          - Action:
-            - s3:PutObject
-            Resource:
-            - arn:aws:s3:::codepipeline*
-            Effect: Allow
-          - Action:
+            - codebuild:*
+            - codedeploy:*
             - s3:*
             - cloudformation:*
             - iam:PassRole
@@ -172,6 +274,53 @@ Resources:
             RunOrder: 1
             Configuration:
               ProjectName: !Ref lambdaBuild
+
+        - Name: Deploy
+          Actions:
+          - Name: CreateChangeSet
+            ActionTypeId:
+              Category: Deploy
+              Owner: AWS
+              Version: 1
+              Provider: CloudFormation
+            InputArtifacts:
+            - Name: lambdaBuildOutput
+            OutputArtifacts: []
+              # - Name: NONE
+            RunOrder: 1
+            Configuration:
+              ActionMode: CHANGE_SET_REPLACE
+              StackName: simpleLambdaStack
+              ChangeSetName: simpleLambdaChangeSet
+              TemplatePath: lambdaBuildOutput::outputTemplate.yml
+              Capabilities: CAPABILITY_IAM
+              #RoleArn: !GetAtt cloudFormationRole.Arn
+              #RoleArn: !GetAtt lambdaPipelineRole.Arn
+              RoleArn: !GetAtt lambdaDeployRole.Arn
+          - Name: ManualApproval
+            ActionTypeId:
+              Category: Approval
+              Owner: AWS
+              Version: 1
+              Provider: Manual
+            RunOrder: 2
+          - Name: ExecuteChangeSet
+            ActionTypeId:
+              Category: Deploy
+              Owner: AWS
+              Version: 1
+              Provider: CloudFormation
+            InputArtifacts:
+            - Name: lambdaBuildOutput
+            OutputArtifacts: []
+              # - Name: NONE
+            RunOrder: 3
+            Configuration:
+              ActionMode: CHANGE_SET_EXECUTE
+              StackName: simpleLambdaStack
+              ChangeSetName: simpleLambdaChangeSet
+              RoleArn: !GetAtt lambdaDeployRole.Arn
+            
 
         # - Name: Deploy
         #   Actions:
@@ -240,7 +389,7 @@ Resources:
               base-directory: 'coverage'
               discard-paths: false
               file-format: COBERTURAXML
-      TimeoutInMinutes: 10
+      TimeoutInMinutes: 5
 
   lambdaBuild:
     Type: AWS::CodeBuild::Project
@@ -251,7 +400,15 @@ Resources:
       ServiceRole: !GetAtt lambdaBuildRole.Arn
       Artifacts:
         Type: CODEPIPELINE
+        # Type: S3
+        # Location: !Ref lambdaArtifactsBucket
+        # Name: lambdaFunction
+        # NamespaceType: NONE
+        # Packaging: NONE
       Environment:
+        # EnvironmentVariables:
+        # - Name: S3_BUCKET
+        #   Value: !Ref artifactsBucket
         Type: LINUX_CONTAINER
         ComputeType: BUILD_GENERAL1_SMALL
         Image: aws/codebuild/amazonlinux2-x86_64-standard:3.0
@@ -271,15 +428,16 @@ Resources:
               commands:
                 - echo Execute build on $(date)
                 - ls -al
-                - !Sub aws cloudformation package --template-file template.yml --s3-bucket ${lambdaArtifactsBucket} --output-template-file outputTemplate.yml
+                - !Sub aws cloudformation package --template-file template.yml --s3-bucket ${artifactsBucket} --output-template-file outputTemplate.yml
             post_build:
               commands:
                 - echo Execute post-build on $(date)
           artifacts:
             type: zip
+            files:
               - template.yml
               - outputTemplate.yml
-      TimeoutInMinutes: 10
+      TimeoutInMinutes: 5
 
   masterPushRepoEvent:
     Type: AWS::Events::Rule
