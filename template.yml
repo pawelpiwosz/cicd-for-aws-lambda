@@ -8,7 +8,7 @@ Resources:
     Properties:
       Handler: simplefunction.handler
       CodeUri: lambdafunction/
-      Runtime: Python3.8
+      Runtime: python3.8
       AutoPublishAlias: live
       Description: pyconf hydpy demo function
       MemorySize: 128
