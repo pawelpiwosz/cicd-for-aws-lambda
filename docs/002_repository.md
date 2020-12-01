@@ -5,7 +5,7 @@ Let's call this repository `pyconf_hydpy`.
 Run  
 
 ```bash
-aws --profile pyconf codecommit create-repository --repository-name pyconf_hydpy --repository-description "Demonstration" --tags Environment=Demo,Purpose=Demo,Conference="Pyconf_hydby"
+aws --profile pyconf codecommit create-repository --repository-name pyconf_hydpy --repository-description "Demonstration" --tags Environment=Demo,Purpose=Demo,Conference="Pyconf_hydpy"
 ```
 
 to create repository.
@@ -16,7 +16,7 @@ Now it is time to initialize the repo.
 
 ```bash
 mkdir pyconf_hydpy
-cd pyconf_hydby
+cd pyconf_hydpy
 
 git init
 git remote add origin ssh://git-codecommit.eu-central-1.amazonaws.com/v1/repos/pyconf_hydpy

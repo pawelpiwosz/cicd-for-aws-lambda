@@ -1,15 +1,24 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: Setup CodeBuild and CodeDeploy pipeline
 
-Resources:
+Parameters:
+  notificationEmail:
+    Type: String
+    Default: 'fake@email.com'
+    Description: Default email for pipeline notifications
 
+Resources:
   artifactsBucket:
     Type: AWS::S3::Bucket
     DeletionPolicy: Delete
 
-  lambdaArtifactsBucket:
-    Type: AWS::S3::Bucket
-    DeletionPolicy: Delete
+  notificationTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      Subscription:
+        - Endpoint:
+            !Ref notificationEmail
+          Protocol: email
 
   eventRole:
     Type: AWS::IAM::Role
@@ -113,9 +122,6 @@ Resources:
           Action:
           - sts:AssumeRole
       Path: '/'
-      # ManagedPolicyArns:
-        # - arn:aws:iam::aws:policy/AmazonS3FullAccess
-        # - arn:aws:iam::aws:policy/AWSCloudFormationFullAccess
       Policies:
       - PolicyName: lambdaDeployPolicy
         PolicyDocument:
@@ -133,8 +139,6 @@ Resources:
             - cloudformation:SetStackPolicy
             - cloudformation:ValidateTemplate
             Resource: 'arn:aws:cloudformation:eu-central-1:aws:transform/Serverless-2016-10-31'
-            # Resource: '*'
-            #Resource: !Sub 'arn:aws:cloudformation:${AWS::Region}:transform/Serverless-2016-10-31'
           - Effect: Allow
             Action:
             - s3:PutObject
@@ -180,15 +184,6 @@ Resources:
       - PolicyName: lambdaPipelinePolicy
         PolicyDocument:
           Statement:
-          # - Effect: Allow
-          #   Action: 
-          #   - lambda:*
-          #   Resource: '*'
-          # - Action:
-          #   - s3:*
-          #   Resource:
-          #   - !Sub 'arn:aws:s3:::${lambdaArtifactsBucket}/*'
-          #   Effect: Allow
           - Effect: Allow
             Action:
             - cloudformation:CreateStack
@@ -202,19 +197,13 @@ Resources:
             - cloudformation:SetStackPolicy
             - cloudformation:ValidateTemplate
             Resource: 'arn:aws:cloudformation:eu-central-1:aws:transform/Serverless-2016-10-31'
-            # Resource: '*'
-          # - Action:
-          #   - codebuild:*
-          #   - codecommit:*
-          #   - kms:*
-          #   Resource: "*"
-          #   Effect: Allow
           - Action:
             - kms:*
             - codecommit:*
             - codebuild:*
             - codedeploy:*
             - s3:*
+            - sns:*
             - cloudformation:*
             - iam:PassRole
             Resource: "*"
@@ -294,8 +283,6 @@ Resources:
               ChangeSetName: simpleLambdaChangeSet
               TemplatePath: lambdaBuildOutput::outputTemplate.yml
               Capabilities: CAPABILITY_IAM
-              #RoleArn: !GetAtt cloudFormationRole.Arn
-              #RoleArn: !GetAtt lambdaPipelineRole.Arn
               RoleArn: !GetAtt lambdaDeployRole.Arn
           - Name: ManualApproval
             ActionTypeId:
@@ -304,6 +291,9 @@ Resources:
               Version: 1
               Provider: Manual
             RunOrder: 2
+            Configuration:
+              NotificationArn: !Ref notificationTopic
+              CustomData: 'Approve or reject the pipeline.'
           - Name: ExecuteChangeSet
             ActionTypeId:
               Category: Deploy
@@ -320,23 +310,6 @@ Resources:
               StackName: simpleLambdaStack
               ChangeSetName: simpleLambdaChangeSet
               RoleArn: !GetAtt lambdaDeployRole.Arn
-            
-
-        # - Name: Deploy
-        #   Actions:
-        #   - Name: LmbdaDeploy
-        #     ActionTypeId:
-        #       Category: Deploy
-        #       Owner: AWS
-        #       Version: '1'
-        #       Provider: Lambda
-        #     InputArtifacts: 
-        #     - Name: lambdaTestedOutput
-        #     OutputArtifacts:
-        #     - Name: lambdaDeployOutput
-        #     Configuration:
-        #       ProjectName: !Ref lambdaDeploy
-        #     RunOrder: 1
       ArtifactStore:
         Type: S3
         Location: !Ref artifactsBucket
@@ -400,15 +373,7 @@ Resources:
       ServiceRole: !GetAtt lambdaBuildRole.Arn
       Artifacts:
         Type: CODEPIPELINE
-        # Type: S3
-        # Location: !Ref lambdaArtifactsBucket
-        # Name: lambdaFunction
-        # NamespaceType: NONE
-        # Packaging: NONE
       Environment:
-        # EnvironmentVariables:
-        # - Name: S3_BUCKET
-        #   Value: !Ref artifactsBucket
         Type: LINUX_CONTAINER
         ComputeType: BUILD_GENERAL1_SMALL
         Image: aws/codebuild/amazonlinux2-x86_64-standard:3.0

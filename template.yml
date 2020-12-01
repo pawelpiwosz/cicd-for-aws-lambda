@@ -13,7 +13,6 @@ Resources:
       Description: pyconf hydpy demo function
       MemorySize: 128
       Timeout: 10
-      # DeploymentPreference: Canary10Percent5Minutes
       Tracing: Active
       Events:
         simpleApi:

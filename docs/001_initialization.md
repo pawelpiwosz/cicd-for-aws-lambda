@@ -30,6 +30,6 @@ Host git-codecommit.*.amazonaws.com
   IdentityFile ~/.ssh/codecommit
 ```
 
-Remember, the user here is the one listed as "name" of your SSH key ID. 
+Remember, the user here is the one listed as "name" of your SSH key ID.
 
 Please, be noted, there is a possible issue with creating ssh key on Windows and powershell. Use Gitbash for it.
