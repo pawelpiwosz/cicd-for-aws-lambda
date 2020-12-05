@@ -25,8 +25,8 @@ def divisionnumbers(a, b):
 
 def handler(event, context):
     """ A very simple Lambda function """
-    numa = 5646
-    numb = 3446
+    numa = 20
+    numb = 10
     firstoperation = sumnumbers(numa, numb)
     secondoperation = mutiplynumbers(numa, numb)
     thirdoperation = subnumbers(numa, numb)
