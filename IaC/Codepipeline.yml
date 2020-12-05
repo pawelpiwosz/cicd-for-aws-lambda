@@ -6,6 +6,11 @@ Parameters:
     Type: String
     Default: 'fake@email.com'
     Description: Default email for pipeline notifications
+  
+  repositoryName:
+    Type: String
+    Default: 'someRepo'
+    Description: Source repository for this pipeline
 
 Resources:
   artifactsBucket:
@@ -64,19 +69,6 @@ Resources:
         - PolicyName: lambdaPolicy
           PolicyDocument:
             Statement:
-            - Effect: Allow
-              Action:
-              - cloudformation:CreateStack
-              - cloudformation:DeleteStack
-              - cloudformation:DescribeStacks
-              - cloudformation:UpdateStack
-              - cloudformation:CreateChangeSet
-              - cloudformation:DeleteChangeSet
-              - cloudformation:DescribeChangeSet
-              - cloudformation:ExecuteChangeSet
-              - cloudformation:SetStackPolicy
-              - cloudformation:ValidateTemplate
-              Resource: 'arn:aws:cloudformation:eu-central-1:aws:transform/Serverless-2016-10-31'
             - Effect: Allow
               Action:
               - lambda:*
@@ -215,7 +207,7 @@ Resources:
     Properties: 
       RoleArn: !GetAtt lambdaPipelineRole.Arn
       Stages:
-        - Name: Source
+        - Name: PullSource
           Actions:
           - InputArtifacts: []
             Name: GetSource
@@ -227,12 +219,12 @@ Resources:
             OutputArtifacts:
             - Name: lambdaSourceOutput
             Configuration:
-              RepositoryName: pyconf_hydpy
+              RepositoryName: !Ref repositoryName
               BranchName: master
               PollForSourceChanges: false
             RunOrder: 1
 
-        - Name: Tests
+        - Name: TestsAndCodeCoverage
           Actions:
           - Name: LambdaTests
             ActionTypeId:
@@ -248,7 +240,7 @@ Resources:
             Configuration:
               ProjectName: !Ref lambdaTest
         
-        - Name: Build
+        - Name: BuildArtifact
           Actions:
           - Name: LambdaBuild
             ActionTypeId:
@@ -264,7 +256,7 @@ Resources:
             Configuration:
               ProjectName: !Ref lambdaBuild
 
-        - Name: Deploy
+        - Name: DeployLambda
           Actions:
           - Name: CreateChangeSet
             ActionTypeId:
@@ -275,7 +267,6 @@ Resources:
             InputArtifacts:
             - Name: lambdaBuildOutput
             OutputArtifacts: []
-              # - Name: NONE
             RunOrder: 1
             Configuration:
               ActionMode: CHANGE_SET_REPLACE
@@ -303,7 +294,6 @@ Resources:
             InputArtifacts:
             - Name: lambdaBuildOutput
             OutputArtifacts: []
-              # - Name: NONE
             RunOrder: 3
             Configuration:
               ActionMode: CHANGE_SET_EXECUTE
