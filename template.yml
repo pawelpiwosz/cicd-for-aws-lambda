@@ -10,7 +10,7 @@ Resources:
       CodeUri: lambdafunction/
       Runtime: python3.8
       AutoPublishAlias: live
-      Description: pyconf hydpy demo function
+      Description: Simple demo function
       MemorySize: 128
       Timeout: 10
       Tracing: Active
