@@ -19,6 +19,7 @@ def subnumbers(a, b):
 
 def divisionnumbers(a, b):
     """ simple function """
+    """some update"""
     result = a / b
     return result
 

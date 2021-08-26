@@ -429,3 +429,9 @@ Resources:
               - Ref: lambdaPipeline
           Id: masterPushRepoEvent
           RoleArn: !GetAtt eventRole.Arn
+
+  codeGuruReviewerAssoc:
+    Type: AWS::CodeGuruReviewer::RepositoryAssociation
+    Properties:
+      Name: !Ref repositoryName
+      Type: CodeCommit
