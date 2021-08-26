@@ -1,4 +1,4 @@
-# Demo repository for [Pyconf Hyderabad 2020](https://pyconf.hydpy.org/2020/)
+# Demo repository for setting up CI/CD for AWS Lambda
 
 ## Introduction
 
