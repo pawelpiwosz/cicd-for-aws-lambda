@@ -13,7 +13,7 @@ Of course, the code can be run from Github, CodePipeline has good integration.
 
 ## Scenario
 
-Workshop scenario is simple. Small lambda function will be deployed to AWS using AWS CodePipeline using canary deployment.
+Workshop scenario is simple. Small lambda function will be deployed to AWS using AWS CodePipeline.
 
 ## Resources
 
