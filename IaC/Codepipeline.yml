@@ -270,7 +270,7 @@ Resources:
             RunOrder: 1
             Configuration:
               ActionMode: CHANGE_SET_REPLACE
-              StackName: simpleLambdaStack
+              StackName: lambdaDemo
               ChangeSetName: simpleLambdaChangeSet
               TemplatePath: lambdaBuildOutput::outputTemplate.yml
               Capabilities: CAPABILITY_IAM
@@ -297,7 +297,7 @@ Resources:
             RunOrder: 3
             Configuration:
               ActionMode: CHANGE_SET_EXECUTE
-              StackName: simpleLambdaStack
+              StackName: lambdaDemo
               ChangeSetName: simpleLambdaChangeSet
               RoleArn: !GetAtt lambdaDeployRole.Arn
       ArtifactStore:
