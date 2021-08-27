@@ -5,7 +5,7 @@ Let's call this repository `cicd-demo`.
 Run  
 
 ```bash
-aws --profile pyconf codecommit create-repository --repository-name cicd-demo --repository-description "Demonstration" --tags Environment=Demo,Purpose=Demo,Conference="cicd-demo"
+aws --profile demo codecommit create-repository --repository-name cicd-demo --repository-description "Demonstration" --tags Environment=Demo,Purpose=Demo,Conference="cicd-demo"
 ```
 
 to create repository.
