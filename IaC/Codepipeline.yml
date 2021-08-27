@@ -411,7 +411,7 @@ Resources:
             - - 'arn:aws:codecommit'
               - Fn::Sub: ${AWS::Region}
               - Fn::Sub: ${AWS::AccountId}
-              - 'pyconf_hydpy'
+              - Ref: repositoryName
         detail:
           referenceType: 
             - branch

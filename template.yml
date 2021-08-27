@@ -14,7 +14,7 @@ Resources:
       Environment:
         Variables:
           AWS_LAMBDA_EXEC_WRAPPER: /opt/codeguru_profiler_lambda_exec
-          AWS_CODEGURU_PROFILER_GROUP_NAME: cicdlambdaprofiler
+          AWS_CODEGURU_PROFILER_GROUP_NAME: test
           AWS_CODEGURU_PROFILER_TARGET_REGION: eu-central-1
       MemorySize: 128
       Timeout: 10
